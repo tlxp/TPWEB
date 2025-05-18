@@ -46,33 +46,33 @@ module.exports = function(User) {
   });
 
   router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ message: 'Nome de utilizador ou e-mail e palavra-passe são obrigatórios.' });
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Nome de utilizador ou e-mail e palavra-passe são obrigatórios.' });
+  }
+  try {
+    const user = await User.findOne({ $or: [{ username }, { email: username }] });
+    if (!user) {
+      return res.status(401).json({ message: 'Nome de utilizador ou e-mail não encontrado.' });
     }
-    try {
-      const user = await User.findOne({ $or: [{ username }, { email: username }] });
-      if (!user) {
-        return res.status(401).json({ message: 'Nome de utilizador ou e-mail não encontrado.' });
-      }
-      if (user.password !== password) {
-        return res.status(401).json({ message: 'Credenciais inválidas.' });
-      }
-      const token = jwt.sign(
-        { id: user._id, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: '1h' }
-      );
-      return res.json({
-        message: `Login bem-sucedido. Bem-vindo, ${user.username}!`,
-        token,
-        role: user.role
-      });
-    } catch (err) {
-      console.error('Erro ao buscar usuário:', err);
-      return res.status(500).json({ message: 'Erro interno do servidor.' });
+    if (user.password !== password) {
+      return res.status(401).json({ message: 'Credenciais inválidas.' });
     }
-  });
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+    return res.json({
+      message: `Login bem-sucedido. Bem-vindo, ${user.username}!`,
+      token,
+      role: user.role
+    });
+  } catch (err) {
+    console.error('Erro ao buscar usuário:', err);
+    return res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+});
 
   router.get('/protected', authorize(['admin']), (req, res) => {
     res.json({ message: `Acesso permitido para ${req.user.role} com ID ${req.user.id}` });
