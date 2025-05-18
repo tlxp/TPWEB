@@ -3,20 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <title>Energia Solar</title>
+  <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
-  <header>
-    <h1>Energia Solar</h1>
-    <div>Cliente</div>
-    <nav>
-      <a href="#" onclick="logout()">Sair</a>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3>Energia Solar</h3>
+    </div>
+    <div class="user-button">Cliente</div>
+    <nav class="sidebar-nav">
+      <ul>
+        <li><a href="#" id="dashboard-link">Dashboard</a></li>
+        <li><a href="#" id="consumo-link">Meu Consumo</a></li>
+        <li><a href="#" id="faturas-link">Faturas</a></li>
+      </ul>
     </nav>
-  </header>
-  <main>
-    <section id="dashboard-section">
+    <button class="logout-button" onclick="logout()">Sair</button>
+  </div>
+  <div class="main-content">
+    <div class="section" id="dashboard-section">
       <h2>Dashboard do Cliente</h2>
-    </section>
-  </main>
+      <p>Bem-vindo ao seu painel de gestão de energia renovável.</p>
+    </div>
+  </div>
   <footer>
     © 2025 Gestão de Energia Renovável. Todos os direitos reservados.
   </footer>
