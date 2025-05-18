@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Energia Renovável</title>
+    <link rel="stylesheet" href="index.css">
+    <script src="index.js" defer></script>
+</head>
+<body>
+    <section class="home-section">
+        <div class="overlay"></div>
+        <div class="auth-container">
+            <h1>Gestão de Energia Renovável</h1>
+            <div class="auth-box">
+                <form id="login-form" class="auth-form">
+                    <label for="username">Utilizador ou E-mail</label>
+                    <input type="text" name="username" placeholder="Utilizador ou E-mail" required>
+                    <label for="password">Palavra-passe</label>
+                    <input type="password" name="password" placeholder="Palavra-passe" required>
+                    <button type="submit">Iniciar Sessão</button>
+                    <a href="#" class="register-link" onclick="showRegisterForm()">Ainda não tem conta?</a>
+                </form>
+                <form id="register-form" class="register-form" style="display: none;">
+                    <label for="name">Nome de Utilizador * (único)</label>
+                    <input type="text" name="name" placeholder="Nome de Utilizador (ex: joao123)" required>
+                    <label for="email">E-mail * (único)</label>
+                    <input type="email" name="email" placeholder="E-mail (ex: joao@exemplo.com)" required>
+                    <label for="password">Palavra-passe *</label>
+                    <input type="password" name="password" placeholder="Palavra-passe" required>
+                    <label for="age">Idade *</label>
+                    <input type="number" name="age" placeholder="Idade" required>
+                    <label for="gender">Género</label>
+                    <select name="gender">
+                        <option value="">Selecione (Opcional)</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Feminino">Feminino</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                    <button type="submit">Registar</button>
+                    <a href="#" class="login-link" onclick="showLoginForm()">Voltar ao Início de Sessão</a>
+                </form>
+            </div>
+        </div>
+    </section>
+    <footer>
+        © 2025 Gestão de Energia Renovável. Todos os direitos reservados.
+    </footer>
+</body>
+</html>
