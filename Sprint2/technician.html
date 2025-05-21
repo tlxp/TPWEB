@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Energia Solar - Técnico</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="technician.css">
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>Energia Solar</h2>
+    </div>
+    <div class="user-info">
+      <p>Técnico</p>
+    </div>
+    <div class="sidebar-nav">
+      <ul>
+        <li><a href="#" class="active">Registo de Certificados</a></li>
+      </ul>
+    </div>
+    <button class="logout-button" onclick="logout()">Sair</button>
+  </div>
+
+  <header class="mobile-header">
+    <h3>Energia Solar</h3>
+    <div class="burger" onclick="toggleSidebar()">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </header>
+
+  <div class="main-content">
+    <header>
+      <h1>Energia Solar</h1>
+    </header>
+
+    <section id="technician-section">
+      <h2>Registo de Certificados</h2>
+      <form id="search-panel-form">
+        <label for="search-query">Pesquisar por ID do Painel ou Nome do Cliente</label>
+        <input type="text" id="search-query" name="search-query" required>
+        <button type="submit">Pesquisar</button>
+      </form>
+
+      <div id="search-results" class="hidden"></div>
+
+      <div id="panel-details" class="card hidden">
+        <h3>Detalhes do Painel</h3>
+        <p><strong>ID:</strong> <span id="detail-panel-id"></span></p>
+        <p><strong>Cliente:</strong> <span id="detail-client"></span></p>
+        <p><strong>Localização:</strong> <span id="detail-location"></span></p>
+        <p><strong>Especificações:</strong> <span id="detail-specs"></span></p>
+        <p><strong>Estado:</strong> <span id="detail-status"></span></p>
+        <p><strong>Data de Registo:</strong> <span id="detail-created"></span></p>
+        <div class="button-group">
+          <button onclick="showCertificateForm()">Confirmar e Submeter Certificado</button>
+          <button class="secondary" onclick="hidePanelDetails()">Cancelar</button>
+        </div>
+      </div>
+
+      <form id="certificate-form" class="hidden">
+        <h3>Upload do Certificado</h3>
+        <label for="panel-id">ID do Painel</label>
+        <input type="text" id="panel-id" name="panel-id" readonly>
+        <label for="certificate">Selecione o arquivo PDF</label>
+        <input type="file" id="certificate" name="certificate" accept=".pdf" required>
+        <div class="button-group">
+          <button type="submit">Submeter Certificado</button>
+          <button type="button" class="secondary" onclick="cancelUpload()">Cancelar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <footer>
+    <p>© 2025 Gestão de Energia Renovável. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="technician.js"></script>
+</body>
+</html>
