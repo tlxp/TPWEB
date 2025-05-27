@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Energia Solar - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <section class="home-section">
+    <div class="overlay"></div>
+    <div class="auth-container">
+      <h1>Gestão de Energia Renovável</h1>
+      <div class="auth-box">
+        <form id="login-form" class="auth-form">
+          <label for="username">Utilizador ou E-mail</label>
+          <input type="text" id="username" name="username" required>
+          <label for="password">Palavra-passe</label>
+          <input type="password" id="password" name="password" required>
+          <button type="submit">Iniciar Sessão</button>
+          <a href="#" class="register-link" onclick="showRegisterForm()">Ainda não tem conta?</a>
+        </form>
+        <form id="register-form" class="register-form" style="display: none;">
+          <label for="name">Nome de Utilizador * (único)</label>
+          <input type="text" id="name" name="name" required>
+          <label for="email">E-mail * (único)</label>
+          <input type="email" id="email" name="email" required>
+          <label for="password">Palavra-passe *</label>
+          <input type="password" id="password" name="password" required>
+          <label for="age">Idade *</label>
+          <input type="number" id="age" name="age" required>
+          <label for="gender">Género</label>
+          <select id="gender" name="gender">
+            <option value="">Selecione (Opcional)</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Feminino">Feminino</option>
+            <option value="Outro">Outro</option>
+          </select>
+          <button type="submit">Registar</button>
+          <a href="#" class="login-link" onclick="showLoginForm()">Voltar ao Início de Sessão</a>
+        </form>
+      </div>
+    </div>
+  </section>
+  <footer>
+    <p>© 2025 Gestão de Energia Renovável. Todos os direitos reservados.</p>
+  </footer>
+  <script src="index.js"></script>
+</body>
+</html>

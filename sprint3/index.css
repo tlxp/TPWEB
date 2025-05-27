@@ -1,0 +1,205 @@
+:root {
+  --primary-color: #1f2937; /* Dark gray-blue */
+  --secondary-color: #374151; /* Slightly lighter gray */
+  --accent-color: #6b7280; /* Muted gray for highlights */
+  --success-color: #10b981; /* Green for success actions */
+  --danger-color: #ef4444; /* Red for errors */
+  --light-color: #f9fafb; /* Light background */
+  --text-color: #111827; /* Dark text */
+  --text-light: #6b7280; /* Light text for secondary info */
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --border-radius: 12px;
+  --transition: all 0.3s ease;
+}
+
+/* Reset e Base */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  color: var(--text-color);
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-image: url('https://www.portalsolar.com.br/_next/image?url=https%3A%2F%2Fportalsolar-images.s3.us-east-2.amazonaws.com%2Finstitucional-and-info-production%2Fimages%2Fbdfdb656-1973-4a1c-a526-f997c1c0131b%2Ftudo-sobre-a-eficiencia-do-painel-solar.jpg&w=640&q=100');
+  background-size: cover;
+  background-position: center;
+  overflow-x: hidden;
+}
+
+/* Secção Principal */
+.home-section {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Camada Escura */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: -1;
+}
+
+/* Container da Autenticação */
+.auth-container {
+  text-align: center;
+  color: white;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 2rem;
+}
+
+.auth-container h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--light-color);
+}
+
+/* Caixa de Autenticação */
+.auth-box {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  max-width: 450px;
+  width: 90%;
+  box-shadow: var(--shadow-md);
+  color: var(--text-color);
+}
+
+/* Formulários */
+.auth-form, .register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.auth-form label, .register-form label {
+  font-weight: 600;
+  color: var(--primary-color);
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.auth-form input, .register-form input,
+.register-form select {
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  width: 100%;
+  background: var(--light-color);
+  transition: var(--transition);
+}
+
+.auth-form input:focus, .register-form input:focus,
+.register-form select:focus {
+  border-color: var(--accent-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(107,114,128,0.1);
+}
+
+/* Botões */
+.auth-form button, .register-form button {
+  padding: 0.875rem;
+  background: linear-gradient(90deg, var(--accent-color), #9ca3af);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.auth-form button:hover, .register-form button:hover {
+  background: linear-gradient(90deg, #4b5563, #6b7280);
+}
+
+/* Links */
+.register-link, .login-link {
+  font-size: 0.9rem;
+  color: var(--accent-color);
+  text-decoration: none;
+  text-align: center;
+  margin-top: 0.5rem;
+  transition: var(--transition);
+}
+
+.register-link:hover, .login-link:hover {
+  color: #4b5563;
+  text-decoration: underline;
+}
+
+/* Rodapé */
+footer {
+  background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  text-align: center;
+  padding: 1.25rem;
+  width: 100%;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .auth-container {
+    padding: 1rem;
+  }
+
+  .auth-container h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .auth-box {
+    padding: 1.5rem;
+    width: 95%;
+  }
+
+  .auth-form label, .register-form label {
+    font-size: 0.9rem;
+  }
+
+  .auth-form input, .register-form input,
+  .register-form select {
+    font-size: 0.9rem;
+    padding: 0.65rem;
+  }
+
+  .auth-form button, .register-form button {
+    font-size: 0.9rem;
+    padding: 0.75rem;
+  }
+
+  .register-link, .login-link {
+    font-size: 0.85rem;
+  }
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-box {
+  animation: fadeIn 0.4s ease-out;
+}
