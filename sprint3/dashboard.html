@@ -1,153 +1,183 @@
 <!DOCTYPE html>
 <html lang="pt">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Energia Solar</title>
-  <link rel="stylesheet" href="dashboard.css">
-  <script src="dashboard.js" defer></script>
-</head>
-<body>
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <h2>Energia Solar</h2>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Energia Solar</title>
+    <link rel="stylesheet" href="dashboard.css" />
+    <script src="dashboard.js" defer></script>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Energia Solar</h2>
+      </div>
+      <div class="user-info">
+        <p>Zé Teste - Cliente</p>
+      </div>
+      <nav class="sidebar-nav">
+        <ul>
+          <li>
+            <a href="#" onclick="showSection('monitor-section')"
+              >Monitorização da Produção</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="showSection('panel-section')"
+              >Registo de Painéis Solares</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="showSection('credits-section')"
+              >Créditos de Energia</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="showSection('my-panels-section')"
+              >Meus Painéis</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <button class="logout-button" onclick="logout()">Sair</button>
     </div>
-    <div class="user-info">
-      <p>Zé Teste - Cliente</p>
-    </div>
-    <nav class="sidebar-nav">
-      <ul>
-        <li><a href="#" onclick="showSection('monitor-section')" class="active">Monitorização da Produção</a></li>
-        <li><a href="#" onclick="showSection('panel-section')">Registo de Painéis Solares</a></li>
-        <li><a href="#" onclick="showSection('credits-section')">Créditos de Energia</a></li>
-        <li><a href="#" onclick="showSection('my-panels-section')">Meus Painéis</a></li>
-      </ul>
-    </nav>
-    <button class="logout-button" onclick="logout()">Sair</button>
-  </div>
 
-  <header class="mobile-header">
-    <h3>Energia Solar</h3>
-    <div class="burger" onclick="toggleSidebar()">
-      <div></div>
-      <div></div>
-      <div></div>
-    </div>
-  </header>
-
-  <main class="main-content">
-    <header>
-      <h1>Energia Solar</h1>
-      <button id="edit-profile-button">Editar Perfil</button>
+    <header class="mobile-header">
+      <h3>Energia Solar</h3>
+      <div class="burger" onclick="toggleSidebar()">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
     </header>
 
-    <section id="monitor-section" class="section">
-      <h2>Monitorização da Produção</h2>
-      <div class="card-container">
-        <div class="card">
-          <h3>Produção em Tempo Real</h3>
-          <p>0 kW</p>
-        </div>
-        <div class="card">
-          <h3>Histórico Mensal</h3>
-          <p>0 kWh</p>
-        </div>
-      </div>
-    </section>
+    <main class="main-content">
+      <header>
+        <h1>Energia Solar</h1>
+      </header>
 
-    <section id="panel-section" class="section" style="display: none;">
-      <h2>Registo de Painéis Solares</h2>
-      <form id="panel-form" class="register-form">
-        <div>
-          <label for="panel-id">ID do Painel</label>
-          <input type="text" id="panel-id" name="panel-id" required>
-          <p id="panel-id-error" class="error"></p>
+      <section id="monitor-section" class="section">
+        <h2>Monitorização da Produção</h2>
+        <div class="card-container">
+          <div class="card real">
+            <h3>Produção em Tempo Real</h3>
+            <p>0 kW</p>
+          </div>
+          <div class="card mes">
+            <h3>Histórico Mensal</h3>
+            <p>0 kWh</p>
+          </div>
         </div>
-        <div>
-          <label for="distrito">Distrito</label>
-          <select id="distrito" name="distrito" required>
-            <option value="">Selecione um distrito</option>
-            <option value="Aveiro">Aveiro</option>
-            <option value="Beja">Beja</option>
-            <option value="Braga">Braga</option>
-            <option value="Bragança">Bragança</option>
-            <option value="Castelo Branco">Castelo Branco</option>
-            <option value="Coimbra">Coimbra</option>
-            <option value="Évora">Évora</option>
-            <option value="Faro">Faro</option>
-            <option value="Guarda">Guarda</option>
-            <option value="Leiria">Leiria</option>
-            <option value="Lisboa">Lisboa</option>
-            <option value="Portalegre">Portalegre</option>
-            <option value="Porto">Porto</option>
-            <option value="Santarém">Santarém</option>
-            <option value="Setúbal">Setúbal</option>
-            <option value="Viana do Castelo">Viana do Castelo</option>
-            <option value="Vila Real">Vila Real</option>
-            <option value="Viseu">Viseu</option>
-            <option value="Açores">Açores</option>
-            <option value="Madeira">Madeira</option>
-          </select>
-        </div>
-        <div>
-          <label for="concelho">Concelho</label>
-          <select id="concelho" name="concelho" required>
-            <option value="">Selecione um distrito primeiro</option>
-          </select>
-        </div>
-        <div>
-          <label for="power-value">Potência (Watts)</label>
-          <select id="power-value" name="power-value" required>
-            <option value="">Selecione a potência</option>
-            <option value="200">200 W</option>
-            <option value="250">250 W</option>
-            <option value="300">300 W</option>
-            <option value="350">350 W</option>
-            <option value="400">400 W</option>
-            <option value="450">450 W</option>
-            <option value="500">500 W</option>
-            <option value="550">550 W</option>
-            <option value="600">600 W</option>
-          </select>
-          <p id="power-value-error" class="error"></p>
-        </div>
-        <div class="radio-group">
-          <label><input type="radio" name="panel-type" value="Monocristalino" required> Monocristalino</label>
-          <label><input type="radio" name="panel-type" value="Policristalino"> Policristalino</label>
-          <label><input type="radio" name="panel-type" value="Filme Fino"> Filme Fino</label>
-        </div>
-        <button type="submit">Submeter Registo</button>
-      </form>
-    </section>
+      </section>
 
-    <section id="credits-section" class="section" style="display: none;">
-      <h2>Créditos de Energia</h2>
-      <div class="card-container">
-        <div class="card">
-          <h3>Créditos Acumulados</h3>
-          <p>0 kWh</p>
-        </div>
-        <div class="card">
-          <h3>Última Leitura</h3>
-          <p>0 kWh (01/05/2025)</p>
-        </div>
-      </div>
-      <button id="send-report">Enviar Relatório por E-mail</button>
-    </section>
+      <section id="panel-section" class="section" style="display: none">
+        <h2>Registo de Painéis Solares</h2>
+        <form id="panel-form" class="register-form">
+          <div>
+            <label for="panel-id">ID do Painel</label>
+            <input type="text" id="panel-id" name="panel-id" required />
+            <p id="panel-id-error" class="error"></p>
+          </div>
+          <div>
+            <label for="distrito">Distrito</label>
+            <select id="distrito" name="distrito" required>
+              <option value="">Selecione um distrito</option>
+              <option value="Aveiro">Aveiro</option>
+              <option value="Beja">Beja</option>
+              <option value="Braga">Braga</option>
+              <option value="Bragança">Bragança</option>
+              <option value="Castelo Branco">Castelo Branco</option>
+              <option value="Coimbra">Coimbra</option>
+              <option value="Évora">Évora</option>
+              <option value="Faro">Faro</option>
+              <option value="Guarda">Guarda</option>
+              <option value="Leiria">Leiria</option>
+              <option value="Lisboa">Lisboa</option>
+              <option value="Portalegre">Portalegre</option>
+              <option value="Porto">Porto</option>
+              <option value="Santarém">Santarém</option>
+              <option value="Setúbal">Setúbal</option>
+              <option value="Viana do Castelo">Viana do Castelo</option>
+              <option value="Vila Real">Vila Real</option>
+              <option value="Viseu">Viseu</option>
+              <option value="Açores">Açores</option>
+              <option value="Madeira">Madeira</option>
+            </select>
+          </div>
+          <div>
+            <label for="concelho">Concelho</label>
+            <select id="concelho" name="concelho" required>
+              <option value="">Selecione um distrito primeiro</option>
+            </select>
+          </div>
+          <div>
+            <label for="power-value">Potência (Watts)</label>
+            <select id="power-value" name="power-value" required>
+              <option value="">Selecione a potência</option>
+              <option value="200">200 W</option>
+              <option value="250">250 W</option>
+              <option value="300">300 W</option>
+              <option value="350">350 W</option>
+              <option value="400">400 W</option>
+              <option value="450">450 W</option>
+              <option value="500">500 W</option>
+              <option value="550">550 W</option>
+              <option value="600">600 W</option>
+            </select>
+            <p id="power-value-error" class="error"></p>
+          </div>
+          <div class="radio-group">
+            <label
+              ><input
+                type="radio"
+                name="panel-type"
+                value="Monocristalino"
+                required
+              />
+              Monocristalino</label
+            >
+            <label
+              ><input type="radio" name="panel-type" value="Policristalino" />
+              Policristalino</label
+            >
+            <label
+              ><input type="radio" name="panel-type" value="Filme Fino" /> Filme
+              Fino</label
+            >
+          </div>
+          <button type="submit">Submeter Registo</button>
+        </form>
+      </section>
 
-    <section id="my-panels-section" class="section" style="display: none;">
-      <h2>Meus Painéis</h2>
-      <form id="search-my-panels-form">
-        <label for="search-my-panels-query">Pesquisar por ID do Painel</label>
-        <input type="text" id="search-my-panels-query" name="search-my-panels-query" placeholder="Ex: PANEL123">
-        <button type="submit">Pesquisar</button>
-      </form>
-      <div id="my-panels-results"></div>
-    </section>
-  </main>
+      <section id="credits-section" class="section" style="display: none">
+        <h2>Créditos de Energia</h2>
+        <div class="card-container">
+          <div class="card creditos">
+            <h3>Créditos Acumulados</h3>
+            <p id="creditos">0 kWh</p>
+          </div>
+        </div>
+        <button id="send-report">Enviar Relatório por E-mail</button>
+      </section>
 
-  <footer>
-    <p>© 2025 Gestão de Energia Renovável. Todos os direitos reservados.</p>
-  </footer>
-</body>
+      <section id="my-panels-section" class="section" style="display: none">
+        <h2>Meus Painéis</h2>
+        <form id="search-my-panels-form">
+          <label for="search-my-panels-query">Pesquisar por ID do Painel</label>
+          <input
+            type="text"
+            id="search-my-panels-query"
+            name="search-my-panels-query"
+            placeholder="Ex: PANEL123"
+          />
+          <button type="submit">Pesquisar</button>
+        </form>
+        <div id="my-panels-results"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2025 Gestão de Energia Renovável. Todos os direitos reservados.</p>
+    </footer>
+  </body>
 </html>

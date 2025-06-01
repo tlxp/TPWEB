@@ -1,240 +1,140 @@
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('operations.js loaded at:', new Date().toISOString());
-  console.log('Current page URL:', window.location.href);
+document.addEventListener("DOMContentLoaded", () => {
+  const monitorForm = document.getElementById("monitor-form");
+  const creditsForm = document.getElementById("credits-form");
+  const monitorResult = document.getElementById("monitor-result");
+  const creditsResult = document.getElementById("credits-result");
+  const realTimeValueSpan = document.getElementById("real-time-value");
+  const monthlyValueSpan = document.getElementById("monthly-value");
+  const monthlyHistorySpan = document.getElementById("monthly-history");
 
-  // Check file version and timestamp
-  const fileVersionMeta = document.querySelector('meta[name="file-version"]');
-  const fileVersion = fileVersionMeta ? fileVersionMeta.getAttribute('content') : 'Unknown';
-  const timestampMeta = document.querySelector('meta[name="timestamp"]');
-  const timestamp = timestampMeta ? timestampMeta.getAttribute('content') : 'Unknown';
+  // ATENÇÃO: A API_BASE_URL AGORA APONTA PARA O TEU SERVIDOR PRINCIPAL (onde está o MongoDB)
+  const API_BASE_URL = "http://localhost:3000/api"; // Certifica-te que esta é a porta do teu server.js principal
 
-  console.log('File version:', fileVersion);
-  console.log('File timestamp:', timestamp);
-
-  if (!fileVersion.includes('20250525') || timestamp !== '2025-05-25T16:51:00') {
-    console.error('Outdated or incorrect file version/timestamp detected:', { fileVersion, timestamp });
-    alert('Erro: Arquivo HTML desatualizado ou incorreto. Versão: ' + fileVersion + ', Timestamp: ' + timestamp + '. Por favor, limpe o cache do navegador e recarregue a página.');
-    return;
-  }
-
-  // Check for token and role
-  const token = localStorage.getItem('token');
-  const userRole = localStorage.getItem('userRole');
-  console.log('Token retrieved:', token ? 'Present' : 'Not present');
-  console.log('Role retrieved:', userRole);
-
-  if (!token || !userRole) {
-    console.error('No token or userRole found in localStorage');
-    alert('Por favor, inicie sessão.');
-    window.location.href = 'index.html';
-    return;
-  }
-
-  const normalizedRole = userRole.trim().toLowerCase();
-  console.log('Normalized role:', normalizedRole);
-  if (normalizedRole !== 'gestor operações') {
-    console.warn('Unauthorized access attempt with role:', normalizedRole);
-    alert('Acesso não autorizado: apenas gestores de operações podem aceder a esta página.');
-    window.location.href = 'index.html';
-    return;
-  }
-
-  // Function to check for DOM elements with retry
-  const checkElements = (attempt = 1) => {
-    console.log(`Attempt ${attempt}: Checking DOM elements...`);
-
-    const monitorForm = document.getElementById('monitor-form');
-    const monitorResult = document.getElementById('monitor-result');
-    const realTimeValue = document.getElementById('real-time-value');
-    const monthlyValue = document.getElementById('monthly-value');
-    const creditsForm = document.getElementById('credits-form');
-    const creditsResult = document.getElementById('credits-result');
-    const logoutBtn = document.querySelector('.logout-btn');
-
-    console.log('monitorForm:', monitorForm ? 'Found' : 'Not found', monitorForm);
-    console.log('monitorResult:', monitorResult ? 'Found' : 'Not found', monitorResult);
-    console.log('realTimeValue:', realTimeValue ? 'Found' : 'Not found', realTimeValue);
-    console.log('monthlyValue:', monthlyValue ? 'Found' : 'Not found', monthlyValue);
-    console.log('creditsForm:', creditsForm ? 'Found' : 'Not found', creditsForm);
-    console.log('creditsResult:', creditsResult ? 'Found' : 'Not found', creditsResult);
-    console.log('logoutBtn:', logoutBtn ? 'Found' : 'Not found', logoutBtn);
-    console.log('Document body HTML:', document.body.innerHTML.substring(0, 500));
-
-    const isTestPage = fileVersion.includes('test-operations');
-    const requiredElementsMissing = isTestPage
-      ? !monitorForm || !monitorResult
-      : !monitorForm || !monitorResult || !realTimeValue || !monthlyValue || !creditsForm || !creditsResult || !logoutBtn;
-
-    if (requiredElementsMissing) {
-      const missingElements = [];
-      if (!monitorForm) missingElements.push('monitor-form');
-      if (!monitorResult) missingElements.push('monitor-result');
-      if (!isTestPage) {
-        if (!realTimeValue) missingElements.push('real-time-value');
-        if (!monthlyValue) missingElements.push('monthly-value');
-        if (!creditsForm) missingElements.push('credits-form');
-        if (!creditsResult) missingElements.push('credits-result');
-        if (!logoutBtn) missingElements.push('logout-btn');
-      }
-      console.error(`Attempt ${attempt}: Required elements not found:`, missingElements);
-
-      if (attempt < 3) {
-        console.log(`Retrying in ${attempt * 500}ms...`);
-        setTimeout(() => checkElements(attempt + 1), attempt * 500);
-        return false;
-      } else {
-        alert(`Erro: Elementos necessários não encontrados após ${attempt} tentativas. Elementos ausentes: ${missingElements.join(', ')}. Verifique o console e a fonte da página (Ctrl+U).`);
-        return false;
-      }
-    }
-
-    // Test direct DOM manipulation
-    console.log('Testing direct DOM manipulation...');
-    if (monitorResult) {
-      monitorResult.innerHTML = '<p>Teste: DOM funcionando! (Monitor)</p>';
-      console.log('Direct DOM test - monitorResult:', monitorResult.innerHTML);
-    }
-    if (creditsResult) {
-      creditsResult.innerHTML = '<p>Teste: DOM funcionando! (Créditos)</p>';
-      console.log('Direct DOM test - creditsResult:', creditsResult.innerHTML);
-    }
-    if (realTimeValue) realTimeValue.textContent = 'Test kW';
-    if (monthlyValue) monthlyValue.textContent = 'Test kWh';
-
-    // Monitor Form Submission
-    if (monitorForm) {
-      monitorForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        console.log('Monitor form submitted at:', new Date().toISOString());
-
-        const clientIdInput = document.getElementById('clientId');
-        if (!clientIdInput) {
-          console.error('clientId input not found');
-          monitorResult.innerHTML = '<p>Erro: Campo de ID do cliente não encontrado.</p>';
-          alert('Erro: Campo de ID do cliente não encontrado.');
-          return;
-        }
-        const clientId = clientIdInput.value.trim();
-        console.log('Client ID entered (monitor):', clientId);
-
-        if (!/^[0-9a-fA-F]{24}$/.test(clientId)) {
-          console.error('Invalid clientId format:', clientId);
-          monitorResult.innerHTML = '<p>Erro: ID do cliente inválido.</p>';
-          alert('Erro: ID do cliente inválido.');
-          return;
-        }
-
-        try {
-          console.log('Fetching monitor data for clientId:', clientId);
-          const response = await fetch(`http://localhost:3000/auth/monitor-production?clientId=${clientId}`, {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          console.log('Monitor fetch response status:', response.status);
-
-          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-          const data = await response.json();
-          console.log('Monitor fetch response data:', data);
-
-          if (data.clientId && data.kWh !== undefined && data.date) {
-            if (realTimeValue) realTimeValue.textContent = `${data.kWh.toFixed(2)} kW`;
-            if (monthlyValue) monthlyValue.textContent = `${data.kWh.toFixed(2)} kWh`;
-            monitorResult.innerHTML = `
-              <p>Produção monitorada com sucesso!</p>
-              <p>Cliente ID: ${data.clientId}</p>
-              <p>Energia Produzida: ${data.kWh.toFixed(2)} kWh</p>
-              <p>Data: ${new Date(data.date).toLocaleString()}</p>
-            `;
-          } else {
-            console.error('Invalid monitor response format:', data);
-            monitorResult.innerHTML = '<p>Erro: Resposta inválida do servidor.</p>';
-            alert('Erro: Resposta inválida do servidor.');
-          }
-        } catch (err) {
-          console.error('Monitor fetch error:', err);
-          monitorResult.innerHTML = `<p>Erro ao buscar dados: ${err.message}</p>`;
-          alert(`Erro ao buscar dados: ${err.message}`);
-        }
-      });
-    }
-
-    // Credits Form Submission
-    if (!isTestPage && creditsForm) {
-      console.log('Setting up credits form event listener...');
-      creditsForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        console.log('Credits form submitted at:', new Date().toISOString());
-
-        const clientIdInput = document.getElementById('clientIdCredits');
-        if (!clientIdInput) {
-          console.error('clientIdCredits input not found');
-          creditsResult.innerHTML = '<p>Erro: Campo de ID do cliente não encontrado.</p>';
-          alert('Erro: Campo de ID do cliente não encontrado.');
-          return;
-        }
-        const clientId = clientIdInput.value.trim();
-        console.log('Client ID entered (credits):', clientId);
-
-        if (!/^[0-9a-fA-F]{24}$/.test(clientId)) {
-          console.error('Invalid clientId format:', clientId);
-          creditsResult.innerHTML = '<p>Erro: ID do cliente inválido.</p>';
-          alert('Erro: ID do cliente inválido.');
-          return;
-        }
-
-        try {
-          console.log('Fetching credits data for clientId:', clientId);
-          const response = await fetch(`http://localhost:3000/auth/credits?clientId=${clientId}`, {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          console.log('Credits fetch response status:', response.status, 'URL:', response.url);
-
-          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-          const data = await response.json();
-          console.log('Credits fetch response data:', data);
-
-          if (data.clientId && data.totalCredits !== undefined) {
-            creditsResult.innerHTML = `
-              <p>Créditos contabilizados com sucesso!</p>
-              <p>Cliente ID: ${data.clientId}</p>
-              <p>Total de Créditos: ${data.totalCredits.toFixed(2)} kWh</p>
-              <p>Última Atualização: ${data.lastUpdated ? new Date(data.lastUpdated).toLocaleString() : 'N/A'}</p>
-            `;
-            alert(`Contabilização de Créditos:\nTotal de Créditos: ${data.totalCredits.toFixed(2)} kWh`);
-          } else {
-            console.error('Invalid credits response format:', data);
-            creditsResult.innerHTML = '<p>Erro: Resposta inválida do servidor.</p>';
-            alert('Erro: Resposta inválida do servidor.');
-          }
-        } catch (err) {
-          console.error('Credits fetch error:', err);
-          creditsResult.innerHTML = `<p>Erro ao buscar créditos: ${err.message}</p>`;
-          alert(`Erro ao buscar créditos: ${err.message}`);
-        }
-      });
-    } else if (!isTestPage) {
-      console.error('Credits form not found, cannot set up event listener');
-    }
-
-    // Logout Button Handler
-    if (logoutBtn) {
-      console.log('Setting up logout button event listener...');
-      logoutBtn.addEventListener('click', () => {
-        console.log('Logout button clicked at:', new Date().toISOString());
-        localStorage.removeItem('token');
-        localStorage.removeItem('userRole');
-        console.log('Token and userRole removed from localStorage');
-        alert('Sessão terminada. Redirecionando para a página de login...');
-        window.location.href = 'index.html';
-      });
-    } else {
-      console.error('Logout button not found, cannot set up event listener');
-    }
-
-    return true;
+  // Função de logout
+  window.logout = function () {
+    window.location.href = "index.html";
   };
 
-  // Initial check
-  checkElements();
+  // Lidar com o formulário de Monitorização de Produção
+  if (monitorForm) {
+    monitorForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const username = document.getElementById("username").value;
+
+      monitorResult.innerHTML = "<p>A carregar dados...</p>";
+
+      if (!username) {
+        monitorResult.innerHTML =
+          '<p style="color: red;">Erro: Username do cliente não pode estar vazio.</p>';
+        console.error("Erro: Username do cliente não foi obtido corretamente.");
+        return;
+      }
+
+      try {
+        // Obter dados em tempo real
+        const realTimeUrl = `${API_BASE_URL}/production/realtime/${username}`;
+        const realTimeResponse = await fetch(realTimeUrl);
+
+        // Tratamento de erro aprimorado
+        if (!realTimeResponse.ok) {
+          const errorData = await realTimeResponse.json();
+          // Exibe a mensagem de erro específica do servidor (ex: "Utilizador não encontrado...")
+          monitorResult.innerHTML = `<p style="color: red;">${
+            errorData.message ||
+            "Erro desconhecido ao carregar dados em tempo real."
+          }</p>`;
+          console.error("Erro do servidor (realtime):", errorData.message);
+          return; // Sai da função, pois houve um erro na requisição
+        }
+        const realTimeData = await realTimeResponse.json();
+        realTimeValueSpan.textContent = `${realTimeData.currentPower} ${realTimeData.unit}`;
+
+        // Obter dados mensais
+        const monthlyUrl = `${API_BASE_URL}/production/monthly/${username}`;
+        const monthlyResponse = await fetch(monthlyUrl);
+        if (!monthlyResponse.ok) {
+          const errorData = await monthlyResponse.json();
+          // Exibe a mensagem de erro específica do servidor
+          monitorResult.innerHTML = `<p style="color: red;">${
+            errorData.message || "Erro desconhecido ao carregar dados mensais."
+          }</p>`;
+          console.error("Erro do servidor (monthly):", errorData.message);
+          return;
+        }
+        const monthlyData = await monthlyResponse.json();
+        monthlyValueSpan.textContent = `${monthlyData.monthlyEnergy} ${monthlyData.unit}`;
+
+        // Exibir histórico mensal
+        let historyHtml = "<ul>";
+        if (monthlyData.history && monthlyData.history.length > 0) {
+          monthlyData.history.forEach((item) => {
+            historyHtml += `<li>${item.month}: ${item.energy} ${monthlyData.unit}</li>`;
+          });
+        } else {
+          historyHtml += "<li>Nenhum histórico disponível.</li>";
+        }
+        historyHtml += "</ul>";
+        monthlyHistorySpan.innerHTML = historyHtml;
+
+        monitorResult.innerHTML = `<p>Dados atualizados para ${username}.</p>`;
+      } catch (error) {
+        console.error("Erro ao buscar dados de monitorização:", error);
+        monitorResult.innerHTML = `<p style="color: red;">Erro ao carregar dados. Por favor, tenta novamente. (${error.message})</p>`;
+        realTimeValueSpan.textContent = "N/A";
+        monthlyValueSpan.textContent = "N/A";
+        monthlyHistorySpan.innerHTML = "N/A";
+      }
+    });
+  } else {
+    console.error('Erro: Formulário com ID "monitor-form" não encontrado!');
+  }
+
+  // Lidar com o formulário de Contabilização dos Créditos
+  if (creditsForm) {
+    creditsForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const clientUserCredits =
+        document.getElementById("clientUserCredits").value;
+
+      creditsResult.innerHTML = "<p>A carregar dados...</p>";
+
+      if (!clientUserCredits) {
+        creditsResult.innerHTML =
+          '<p style="color: red;">Erro: Username do cliente para créditos não pode estar vazio.</p>';
+        console.error(
+          "Erro: Username do cliente para créditos não foi obtido corretamente."
+        );
+        return;
+      }
+
+      try {
+        const monthlyTallyUrl = `${API_BASE_URL}/credits/monthly-tally/${clientUserCredits}`;
+        const response = await fetch(monthlyTallyUrl);
+
+        // Tratamento de erro aprimorado para créditos
+        if (!response.ok) {
+          const errorData = await response.json();
+          creditsResult.innerHTML = `<p style="color: red;">${
+            errorData.message || "Erro desconhecido ao carregar créditos."
+          }</p>`;
+          console.error("Erro do servidor (credits):", errorData.message);
+          return;
+        }
+        const data = await response.json();
+
+        // Atualizado para exibir os novos dados de créditos
+        creditsResult.innerHTML = `
+          <p><strong>Produção Registrada este Mês:</strong> ${data.producedThisMonth} kWh</p>
+          <p><strong>Consumo Registrado este Mês:</strong> ${data.consumedThisMonth} kWh</p>
+          <p><strong>Créditos Gerados este Mês:</strong> ${data.energyForCredits} ${data.unit}</p>
+          <p><strong>Créditos Totais Acumulados:</strong> ${data.currentTotalCredits} ${data.unit}</p>
+        `;
+      } catch (error) {
+        console.error("Erro ao buscar créditos:", error);
+        creditsResult.innerHTML = `<p style="color: red;">Erro ao carregar créditos. Por favor, tenta novamente. (${error.message})</p>`;
+      }
+    });
+  } else {
+    console.error('Erro: Formulário com ID "credits-form" não encontrado!');
+  }
 });

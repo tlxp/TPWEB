@@ -1,87 +1,166 @@
 <!DOCTYPE html>
 <html lang="pt">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="file-version" content="operations-v20250525">
-  <meta name="timestamp" content="2025-05-25T16:51:00"> <!-- Updated timestamp -->
-  <title>Operações</title>
-  <link rel="stylesheet" href="operations.css">
-</head>
-<body>
-  <div class="sidebar">
-    <h1>Cliente Ativo</h1>
-    <div class="client-info">
-      <h2>ID:</h2>
-      <h3>682b3604bb3a0c7f90210355</h3>
-    </div>
-    <ul class="client-menu">
-      <li>• Produção</li>
-      <li>• Créditos</li>
-    </ul>
-    <button class="logout-btn">Sair</button>
-  </div>
-
-  <div class="main-content">
-    <div class="section">
-      <h2>Monitorização de Produção de Energia</h2>
-      <div class="tabs">
-        <div class="tab active" onclick="showTab('real-time')">Produção em Tempo Real</div>
-        <div class="tab" onclick="showTab('monthly')">Histórico Mensal</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="file-version" content="operations-v20250525" />
+    <meta name="timestamp" content="2025-05-25T16:51:00" />
+    <title>Operações</title>
+    <link rel="stylesheet" href="operations.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Energia Solar</h2>
       </div>
-      <div class="tab-content active" id="real-time">
-        <div class="data-row">
-          <label>Potência Atual:</label>
-          <span id="real-time-value">0 kW</span>
-        </div>
+      <div class="user-info">
+        <p>Gestor de Operações</p>
       </div>
-      <div class="tab-content" id="monthly">
-        <div class="data-row">
-          <label>Energia Produzida:</label>
-          <span id="monthly-value">0 kWh</span>
-        </div>
-        <div class="data-row">
-          <label>Histórico Mensal:</label>
-          <span id="monthly-history">Dados em breve...</span>
-        </div>
-      </div>
-      <form id="monitor-form">
-        <label for="clientId">ID do Cliente</label>
-        <input type="text" id="clientId" name="clientId" required placeholder="Ex: 682b3604bb3a0c7f90210355">
-        <button type="submit">Monitorar Produção</button>
-      </form>
-      <div id="monitor-result" class="result"><p>Aguardando dados...</p></div>
+      <nav class="sidebar-nav">
+        <ul>
+          <li>
+            <a href="#" onclick="showSection('monitor-section')"
+              >Monitorização da Produção</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="showSection('credits-section')"
+              >Contabilização dos Créditos</a
+            >
+          </li>
+        </ul>
+      </nav>
+      <button class="logout-button" onclick="logout()">Sair</button>
     </div>
 
-    <div class="section">
-      <h2>Contabilização dos Créditos de Energia</h2>
-      <form id="credits-form">
-        <label for="clientIdCredits">ID do Cliente</label>
-        <input type="text" id="clientIdCredits" name="clientIdCredits" required placeholder="Ex: 682b3604bb3a0c7f90210355">
-        <button type="submit">Consultar Créditos</button>
-      </form>
-      <div id="credits-result" class="result"><p>Aguardando dados...</p></div>
-    </div>
-  </div>
+    <header class="mobile-header">
+      <h3>Energia Solar</h3>
+      <div class="burger" onclick="toggleSidebar()">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+    </header>
 
-  <!-- Diagnostic script to check DOM state -->
-  <script>
-    console.log('[Diagnostic] Page loaded at:', new Date().toISOString());
-    const monitorFormDiagnostic = document.getElementById('monitor-form');
-    const creditsFormDiagnostic = document.getElementById('credits-form');
-    console.log('[Diagnostic] monitor-form element:', monitorFormDiagnostic ? 'Found' : 'Not found', monitorFormDiagnostic);
-    console.log('[Diagnostic] credits-form element:', creditsFormDiagnostic ? 'Found' : 'Not found', creditsFormDiagnostic);
-    console.log('[Diagnostic] Initial DOM body:', document.body.innerHTML);
-  </script>
+    <main class="main-content">
+      <header>
+        <h1>Gestor de Operações</h1>
+      </header>
 
-  <script src="operations.js"></script>
-  <script>
-    function showTab(tabId) {
-      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
-      document.getElementById(tabId).classList.add('active');
-    }
-  </script>
-</body>
+      <section id="monitor-section" class="section">
+        <h2>Monitorização de Produção de Energia</h2>
+        <div class="tabs">
+          <div class="tab active" onclick="showTab('real-time')">
+            Produção em Tempo Real
+          </div>
+          <div class="tab" onclick="showTab('monthly')">Histórico Mensal</div>
+        </div>
+        <div class="tab-content active" id="real-time">
+          <div class="data-row">
+            <label>Potência Atual:</label>
+            <span id="real-time-value">0 kW</span>
+          </div>
+        </div>
+        <div class="tab-content" id="monthly">
+          <div class="data-row">
+            <label>Energia Produzida:</label>
+            <span id="monthly-value">0 kWh</span>
+          </div>
+          <div class="data-row">
+            <label>Histórico Mensal:</label>
+            <span id="monthly-history">Dados em breve...</span>
+          </div>
+        </div>
+        <form id="monitor-form">
+          <label for="username">Username do Cliente</label>
+          <input type="text" id="username" name="username" required />
+          <button type="submit">Monitorar Produção</button>
+        </form>
+        <div id="monitor-result" class="result">
+          <p>Aguardando dados...</p>
+        </div>
+      </section>
+
+      <section id="credits-section" class="section" style="display: none">
+        <h2>Contabilização dos Créditos de Energia</h2>
+        <form id="credits-form">
+          <label for="clientUserCredits">Username do Cliente</label>
+          <input
+            type="text"
+            id="clientUserCredits"
+            name="clientUserCredits"
+            required
+          />
+          <button type="submit">Consultar Créditos</button>
+        </form>
+        <div id="credits-result" class="result">
+          <p>Aguardando dados...</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2025 Gestão de Energia Renovável. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="operations.js"></script>
+    <script>
+      // Função para mostrar/ocultar seções principais
+      function showSection(sectionId) {
+        document.querySelectorAll(".section").forEach((section) => {
+          section.style.display = "none";
+        });
+        document.getElementById(sectionId).style.display = "block";
+
+        // Remove a classe 'active' de todos os links da sidebar e adiciona ao link clicado
+        document.querySelectorAll(".sidebar-nav ul li a").forEach((link) => {
+          link.classList.remove("active");
+        });
+        document
+          .querySelector(
+            `.sidebar-nav ul li a[onclick="showSection('${sectionId}')"]`
+          )
+          .classList.add("active");
+
+        // Oculta a sidebar em mobile após clicar num item
+        const sidebar = document.querySelector(".sidebar");
+        const burger = document.querySelector(".burger");
+        if (sidebar.classList.contains("sidebar-active")) {
+          sidebar.classList.remove("sidebar-active");
+          burger.classList.remove("toggle");
+        }
+      }
+
+      // Função para mostrar as abas dentro da seção de monitorização
+      function showTab(tabId) {
+        document
+          .querySelectorAll(".tab")
+          .forEach((tab) => tab.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((content) => content.classList.remove("active"));
+        document
+          .querySelector(`.tab[onclick="showTab('${tabId}')"]`)
+          .classList.add("active");
+        document.getElementById(tabId).classList.add("active");
+      }
+
+      // Função para alternar a sidebar em dispositivos móveis
+      function toggleSidebar() {
+        const sidebar = document.querySelector(".sidebar");
+        const burger = document.querySelector(".burger");
+        sidebar.classList.toggle("sidebar-active");
+        burger.classList.toggle("toggle");
+      }
+
+      // Exibe a seção de monitorização por padrão ao carregar a página
+      document.addEventListener("DOMContentLoaded", () => {
+        showSection("monitor-section");
+      });
+    </script>
+  </body>
 </html>

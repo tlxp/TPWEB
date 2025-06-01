@@ -1,219 +1,397 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
-const authRoutes = require('./auth');
-const { GridFSBucket } = require('mongodb');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs').promises;
-
-mongoose.set('strictQuery', false);
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+const authRoutes = require("./auth"); // Assumindo que este ficheiro existe
+const { GridFSBucket } = require("mongodb");
+const multer = require("multer");
+const fetch = require("node-fetch"); // Precisamos de node-fetch
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const DB_URI = process.env.DB_URI || 'mongodb://localhost:27017/loginDB';
+const PORT = process.env.PORT || 3000; // A tua porta principal (ex: 3000)
+const DB_URI = process.env.DB_URI || "mongodb://localhost:27017/loginDB";
+const ENERGY_SIM_API_URL = "http://localhost:4000/api"; // URL do teu servidor de simulação
 
-// Serve static files from the 'public' directory (excluding test-operations.html)
-app.use((req, res, next) => {
-  if (req.path === '/test-operations.html') {
-    return next();
-  }
-  express.static(path.join(__dirname, 'public'))(req, res, next);
-});
-
-// Log static file requests
-app.use((req, res, next) => {
-  if (req.path.endsWith('.html') || req.path.endsWith('.js') || req.path.endsWith('.css')) {
-    console.log(`[${new Date().toISOString()}] Static file request: ${req.method} ${req.url} - Serving from: ${path.join(__dirname, 'public', req.path)}`);
-  }
-  next();
-});
-
-// Explicit routes for specific HTML files
-app.get('/', (req, res) => {
-  console.log(`[${new Date().toISOString()}] Redirecting / to /index.html`);
-  res.redirect('/index.html');
-});
-
-app.get('/operations.html', async (req, res) => {
-  const filePath = path.join(__dirname, 'public', 'operations.html');
-  console.log(`[${new Date().toISOString()}] Serving /operations.html from: ${filePath}`);
-  try {
-    const fileContent = await fs.readFile(filePath, 'utf8');
-    console.log(`[${new Date().toISOString()}] /operations.html content (first 200 chars):`, fileContent.substring(0, 200));
-    res.sendFile(filePath, (err) => {
-      if (err) {
-        console.error(`[${new Date().toISOString()}] Error serving /operations.html:`, err.message);
-        res.status(404).send('Página não encontrada.');
-      }
-    });
-  } catch (err) {
-    console.error(`[${new Date().toISOString()}] Error reading /operations.html:`, err.message);
-    res.status(404).send('Página não encontrada.');
-  }
-});
-
-app.get('/test-operations.html', async (req, res) => {
-  const filePath = path.join(__dirname, 'public', 'test-operations.html');
-  console.log(`[${new Date().toISOString()}] Serving /test-operations.html from: ${filePath}`);
-  try {
-    const fileContent = await fs.readFile(filePath, 'utf8');
-    console.log(`[${new Date().toISOString()}] /test-operations.html full content:`, fileContent);
-    res.set('Content-Type', 'text/html');
-    res.send(fileContent);
-  } catch (err) {
-    console.error(`[${new Date().toISOString()}] Error reading /test-operations.html:`, err.message);
-    res.status(404).send('Página não encontrada.');
-  }
-});
-
-// Multer setup for file uploads
+// Configure multer to store files in memory
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
+    if (file.mimetype === "application/pdf") {
       cb(null, true);
     } else {
-      cb(new Error('Apenas ficheiros PDF são permitidos.'), false);
+      cb(new Error("Apenas ficheiros PDF são permitidos."), false);
     }
   },
-  limits: { fileSize: 5 * 1024 * 1024 }
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 });
 
-// CORS setup
-app.use(cors({
-  origin: true,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-app.options('*', cors());
+// CORS configuration
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+app.options("*", cors());
 
-// Body parser
+// Middleware
 app.use(bodyParser.json());
 
-// Log all requests and responses
+// Debug middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  res.on('finish', () => {
-    console.log(`[${new Date().toISOString()}] Response: ${res.statusCode} ${res.statusMessage}`);
+  const start = process.hrtime.bigint();
+  res.on("finish", () => {
+    const end = process.hrtime.bigint();
+    const durationMs = Number(end - start) / 1_000_000;
+    console.log(
+      `[${new Date().toISOString()}] Response: ${res.statusCode} ${
+        res.statusMessage
+      } - ${durationMs.toFixed(2)}ms`
+    );
   });
   next();
 });
 
-// MongoDB connection and routes
-const connectWithRetry = () => {
-  mongoose.connect(DB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => {
-      console.log('Conectado ao MongoDB com Mongoose');
+// MongoDB connection
+mongoose
+  .connect(DB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log("Conectado ao MongoDB com Mongoose");
 
-      const conn = mongoose.connection;
-      const gridFSBucket = new GridFSBucket(conn.db, {
-        bucketName: 'certificates'
-      });
+    const conn = mongoose.connection;
+    const gridFSBucket = new GridFSBucket(conn.db, {
+      bucketName: "certificates",
+    });
 
-      const userSchema = new mongoose.Schema({
+    // Schemas (certifica-te que os campos prod, prodMes, creditos existem)
+    const userSchema = new mongoose.Schema(
+      {
         username: { type: String, required: true, unique: true, trim: true },
         email: { type: String, required: true, unique: true, trim: true },
         password: { type: String, required: true },
-        role: { type: String, required: true, enum: ['admin', 'user', 'Cliente', 'Técnico', 'Gestor Operações'] }
-      }, { collection: 'users' });
+        role: {
+          type: String,
+          required: true,
+          enum: ["admin", "user", "Cliente", "Técnico", "Gestor Operações"],
+        },
+        prod: { type: Number, default: 0 },
+        prodMes: { type: Number, default: 0 },
+        creditos: { type: Number, default: 0 },
+      },
+      { collection: "users" }
+    );
 
-      userSchema.pre('save', async function (next) {
-        if (this.isModified('password')) {
-          const bcrypt = require('bcrypt');
-          const saltRounds = 10;
-          this.password = await bcrypt.hash(this.password, saltRounds);
-        }
-        next();
-      });
+    userSchema.pre("save", async function (next) {
+      if (this.isModified("password")) {
+        const bcrypt = require("bcrypt");
+        const saltRounds = 10;
+        this.password = await bcrypt.hash(this.password, saltRounds);
+      }
+      next();
+    });
 
-      const User = mongoose.model('User', userSchema);
+    const User = mongoose.model("User", userSchema);
 
-      const solarPanelSchema = new mongoose.Schema({
-        panelId: { 
-          type: String, 
-          required: true, 
+    // Outros Schemas (SolarPanel, Certificate, Credit) mantêm-se como estavam
+    const solarPanelSchema = new mongoose.Schema(
+      {
+        panelId: {
+          type: String,
+          required: true,
           match: /^PANEL\d{3}$/,
           trim: true,
-          unique: true
+          unique: true,
         },
-        location: { 
-          type: String, 
-          required: true, 
+        location: {
+          type: String,
+          required: true,
           match: /^[A-Za-zÀ-ÿ\s]+,\s*[A-Za-zÀ-ÿ\s]+$/,
-          trim: true 
+          trim: true,
         },
-        technicalSpecs: { 
-          type: String, 
-          required: true, 
+        technicalSpecs: {
+          type: String,
+          required: true,
           match: /^\d+W,\s*(Monocristalino|Policristalino|Filme Fino)$/,
-          trim: true 
+          trim: true,
         },
-        clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        status: { type: String, enum: ['Pendente', 'Aprovado', 'Rejeitado'], default: 'Pendente' },
-        createdAt: { type: Date, default: Date.now }
-      }, { collection: 'solarpanels' });
-      solarPanelSchema.index({ clientId: 1 });
-      const SolarPanel = mongoose.model('SolarPanel', solarPanelSchema);
+        clientId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        status: {
+          type: String,
+          enum: ["Pendente", "Aprovado", "Rejeitado"],
+          default: "Pendente",
+        },
+        createdAt: { type: Date, default: Date.now },
+      },
+      { collection: "solarpanels" }
+    );
+    solarPanelSchema.index({ clientId: 1 });
+    const SolarPanel = mongoose.model("SolarPanel", solarPanelSchema);
 
-      const certificateSchema = new mongoose.Schema({
-        panelId: { type: mongoose.Schema.Types.ObjectId, ref: 'SolarPanel', required: true },
-        technicianId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        certificateFileId: { type: mongoose.Schema.Types.ObjectId, required: true },
-        createdAt: { type: Date, default: Date.now }
-      }, { collection: 'certificates' });
-      certificateSchema.index({ panelId: 1, technicianId: 1 });
-      const Certificate = mongoose.model('Certificate', certificateSchema);
+    const certificateSchema = new mongoose.Schema(
+      {
+        panelId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "SolarPanel",
+          required: true,
+        },
+        technicianId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        certificateFileId: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true,
+        },
+        createdAt: { type: Date, default: Date.now },
+      },
+      { collection: "certificates" }
+    );
+    certificateSchema.index({ panelId: 1, technicianId: 1 });
+    const Certificate = mongoose.model("Certificate", certificateSchema);
 
-      const creditSchema = new mongoose.Schema({
-        clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    const creditSchema = new mongoose.Schema(
+      {
+        clientId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
         kWh: { type: Number, required: true },
-        date: { type: Date, default: Date.now }
-      }, { collection: 'credits' });
-      const Credit = mongoose.model('Credit', creditSchema);
+        date: { type: Date, default: Date.now },
+      },
+      { collection: "credits" }
+    );
+    const Credit = mongoose.model("Credit", creditSchema);
 
-      // Mock /auth/credits route for testing
-      app.get('/auth/credits', (req, res) => {
-        console.log(`[${new Date().toISOString()}] Mock /auth/credits endpoint called for clientId: ${req.query.clientId}`);
-        const { clientId } = req.query;
-        if (!clientId || !/^[0-9a-fA-F]{24}$/.test(clientId)) {
-          return res.status(400).json({ error: 'Invalid clientId' });
+    // Rotas de autenticação
+    console.log("Registering /auth routes...");
+    app.use(
+      "/auth",
+      authRoutes(User, SolarPanel, Certificate, Credit, gridFSBucket, upload)
+    );
+    console.log("Routes registered.");
+
+    // --- Endpoints para Monitorização e Créditos com Validação e Persistência ---
+
+    // Endpoint para obter a produção de energia em tempo real
+    app.get("/api/production/realtime/:username", async (req, res) => {
+      const { username } = req.params;
+      console.log(`[REALTIME] Requisição para monitorização de: ${username}`);
+      try {
+        let user = await User.findOne({ username, role: "Cliente" });
+
+        // Validação: Utilizador deve existir e ter a role "Cliente"
+        if (!user) {
+          console.log(
+            `[REALTIME] Utilizador '${username}' não encontrado ou não é um Cliente válido.`
+          );
+          return res.status(404).json({
+            message:
+              "Utilizador não encontrado ou não é um Cliente válido. Por favor, insira um username válido.",
+          });
         }
+        console.log(
+          `[REALTIME] Utilizador '${username}' (Cliente) encontrado.`
+        );
+
+        // Faz uma requisição ao servidor de simulação para obter a potência atual
+        console.log(
+          `[REALTIME] Chamando API de simulação: ${ENERGY_SIM_API_URL}/production/realtime/${username}`
+        );
+        const simResponse = await fetch(
+          `${ENERGY_SIM_API_URL}/production/realtime/${username}`
+        );
+        if (!simResponse.ok) {
+          const errorText = await simResponse.text();
+          console.error(
+            `[REALTIME] ERRO na resposta da API de simulação (${simResponse.status}): ${errorText}`
+          );
+          throw new Error(
+            `Erro na API de simulação: ${simResponse.status} - ${errorText}`
+          );
+        }
+        const simData = await simResponse.json();
+        console.log(`[REALTIME] Dados de simulação recebidos:`, simData);
+
+        // Atualiza o campo 'prod' do utilizador com o valor simulado
+        user.prod = simData.currentPower;
+        await user.save(); // Guarda a alteração no DB
+        console.log(
+          `[REALTIME] 'prod' para '${username}' atualizado para ${user.prod} e salvo no DB.`
+        );
+
+        // Devolve os dados persistidos ao frontend
         res.json({
-          clientId: clientId,
-          totalCredits: 42.5,
-          lastUpdated: new Date('2025-05-25T03:33:56.011Z').toISOString()
+          username: user.username,
+          currentPower: user.prod,
+          unit: "kW",
         });
-      });
-
-      console.log('Registering /auth routes...');
-      app.use('/auth', authRoutes(User, SolarPanel, Certificate, Credit, gridFSBucket, upload));
-      console.log('Routes registered.');
-
-      // Error handling middleware
-      app.use((err, req, res, next) => {
-        console.error(`[${new Date().toISOString()}] Server Error:`, err);
-        res.status(500).json({ message: 'Erro interno do servidor.', error: err.message });
-      });
-
-      // Start the server only after MongoDB connection is established
-      app.listen(PORT, () => {
-        console.log(`[${new Date().toISOString()}] Servidor a correr em http://localhost:${PORT}`);
-      });
-    })
-    .catch(err => {
-      console.error(`[${new Date().toISOString()}] Erro ao conectar ao MongoDB:`, err.message);
-      console.log('Tentando reconectar em 5 segundos...');
-      setTimeout(connectWithRetry, 5000);
+      } catch (error) {
+        console.error(
+          "[REALTIME] ERRO geral no endpoint /production/realtime:",
+          error
+        );
+        res.status(500).json({ message: "Erro interno do servidor." });
+      }
     });
-};
 
-connectWithRetry();
+    // Endpoint para obter o histórico mensal de produção de energia
+    app.get("/api/production/monthly/:username", async (req, res) => {
+      const { username } = req.params;
+      console.log(`[MONTHLY] Requisição para histórico mensal de: ${username}`);
+      try {
+        let user = await User.findOne({ username, role: "Cliente" });
 
-mongoose.connection.on('disconnected', () => {
-  console.log(`[${new Date().toISOString()}] Conexão com MongoDB encerrada.`);
-  connectWithRetry();
+        // Validação: Utilizador deve existir e ter a role "Cliente"
+        if (!user) {
+          console.log(
+            `[MONTHLY] Utilizador '${username}' não encontrado ou não é um Cliente válido.`
+          );
+          return res.status(404).json({
+            message:
+              "Utilizador não encontrado ou não é um Cliente válido. Por favor, insira um username válido.",
+          });
+        }
+        console.log(`[MONTHLY] Utilizador '${username}' (Cliente) encontrado.`);
+
+        // Faz uma requisição ao servidor de simulação para obter o histórico
+        console.log(
+          `[MONTHLY] Chamando API de simulação: ${ENERGY_SIM_API_URL}/production/monthly/${username}`
+        );
+        const simResponse = await fetch(
+          `${ENERGY_SIM_API_URL}/production/monthly/${username}`
+        );
+        if (!simResponse.ok) {
+          const errorText = await simResponse.text();
+          console.error(
+            `[MONTHLY] ERRO na resposta da API de simulação (${simResponse.status}): ${errorText}`
+          );
+          throw new Error(
+            `Erro na API de simulação: ${simResponse.status} - ${errorText}`
+          );
+        }
+        const simData = await simResponse.json();
+        console.log(`[MONTHLY] Dados de simulação recebidos:`, simData);
+
+        user.prodMes = simData.monthlyEnergy; // simData.monthlyEnergy é o valor de Junho da simulação
+        await user.save(); // Guarda a alteração no DB
+        console.log(
+          `[MONTHLY] 'prodMes' para '${username}' ATUALIZADO para ${user.prodMes} e salvo no DB.`
+        );
+
+        // Devolve os dados ao frontend (histórico é do sim-server, monthlyEnergy é o de Junho persistido)
+        res.json({
+          username: user.username,
+          monthlyEnergy: user.prodMes, // Usa o valor persistente de Junho
+          unit: "kWh",
+          history: simData.history, // O histórico detalhado vem da simulação
+        });
+      } catch (error) {
+        console.error(
+          "[MONTHLY] ERRO geral no endpoint /production/monthly:",
+          error
+        );
+        res.status(500).json({ message: "Erro interno do servidor." });
+      }
+    });
+
+    // Endpoint para Contabilização Mensal de Créditos
+    app.get("/api/credits/monthly-tally/:username", async (req, res) => {
+      const { username } = req.params;
+      console.log(
+        `[CREDITS] Requisição para contabilizar créditos de: ${username}`
+      );
+      try {
+        let user = await User.findOne({ username, role: "Cliente" });
+
+        // Validação: Utilizador deve existir e ter a role "Cliente"
+        if (!user) {
+          console.log(
+            `[CREDITS] Utilizador '${username}' não encontrado ou não é um Cliente válido.`
+          );
+          return res.status(404).json({
+            message:
+              "Utilizador não encontrado ou não é um Cliente válido. Por favor, insira um username válido.",
+          });
+        }
+        console.log(`[CREDITS] Utilizador '${username}' (Cliente) encontrado.`);
+
+        // A "produção registrada este mês" para créditos é o valor de 'prodMes' do utilizador,
+        // que deve ser a energia de Junho já guardada na BD.
+        const producedThisMonth = user.prodMes;
+
+        // Não precisamos de chamar a API de simulação aqui para `producedThisMonth`
+        // porque já o temos persistido em `user.prodMes`.
+
+        // Simula consumo (ainda aleatório, não persistente nesta fase)
+        const consumedThisMonth = (Math.random() * (1500 - 50) + 50).toFixed(1);
+
+        // Os créditos gerados este mês são o valor inteiro da energia produzida neste mês ('prodMes')
+        let energyForCredits = 0; // Inicializa os créditos gerados este mês como 0
+        // Lógica para calcular os créditos gerados este mês
+        if (producedThisMonth > consumedThisMonth) {
+          energyForCredits = Math.floor(producedThisMonth - consumedThisMonth);
+          console.log(
+            `[CREDITS] Produção (${producedThisMonth}) > Consumo (${consumedThisMonth}). Créditos a gerar: ${energyForCredits}`
+          );
+        } else {
+          console.log(
+            `[CREDITS] Produção (${producedThisMonth}) <= Consumo (${consumedThisMonth}). Créditos a gerar: 0.`
+          );
+        }
+
+        // Atualiza os créditos totais do utilizador na BD, acumulando os créditos gerados
+        const oldCredits = user.creditos;
+        user.creditos = user.creditos + energyForCredits;
+        await user.save(); // Guarda a alteração no DB
+        console.log(
+          `[CREDITS] Créditos de '${username}' atualizados de ${oldCredits} para ${user.creditos} e salvos no DB.`
+        );
+
+        res.json({
+          username: user.username,
+          producedThisMonth: producedThisMonth, // Valor de prodMes do DB
+          consumedThisMonth: parseFloat(consumedThisMonth),
+          energyForCredits: energyForCredits, // Valor inteiro
+          currentTotalCredits: user.creditos, // Créditos totais atualizados do DB
+          unit: "créditos",
+        });
+      } catch (error) {
+        console.error(
+          "[CREDITS] ERRO geral no endpoint /credits/monthly-tally:",
+          error
+        );
+        res.status(500).json({ message: "Erro interno do servidor." });
+      }
+    });
+
+    // Error handling middleware
+    app.use((err, req, res, next) => {
+      console.error("Server Error:", err);
+      res
+        .status(500)
+        .json({ message: "Erro interno do servidor.", error: err.message });
+    });
+
+    // Start server
+    app.listen(PORT, () => {
+      console.log(`Servidor Principal a correr em http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Erro ao conectar ao MongoDB:", err);
+    process.exit(1);
+  });
+
+mongoose.connection.on("disconnected", () => {
+  console.log("Conexão com MongoDB encerrada.");
 });
