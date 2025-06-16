@@ -7,9 +7,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const monthlyValueSpan = document.getElementById("monthly-value");
   const monthlyHistorySpan = document.getElementById("monthly-history");
 
-  // ATENÇÃO: A API_BASE_URL AGORA APONTA PARA O TEU SERVIDOR PRINCIPAL (onde está o MongoDB)
   const API_BASE_URL = "http://localhost:3000/api"; // Certifica-te que esta é a porta do teu server.js principal
 
+  if (!token || !userRole) {
+    alert("Por favor, inicie sessão.");
+    window.location.href = "index.html";
+    return;
+  }
+
+  if (userRole !== "Gestor Operações") {
+    alert(
+      "Acesso não autorizado: apenas gestores de operações podem aceder a esta página."
+    );
+    window.location.href = "index.html";
+    return;
+  }
+  
   // Função de logout
   window.logout = function () {
     window.location.href = "index.html";
