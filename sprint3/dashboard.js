@@ -462,7 +462,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const panelForm = document.getElementById("panel-form");
-  const reportButton = document.getElementById("send-report");
   const searchMyPanelsForm = document.getElementById("search-my-panels-form");
   const myPanelsResults = document.getElementById("my-panels-results");
 
@@ -521,23 +520,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       alert(`Erro: ${err.message}`);
     } finally {
       submitButton.disabled = false;
-    }
-  });
-
-  reportButton.addEventListener("click", async () => {
-    try {
-      const response = await fetch("http://localhost:3000/auth/send-report", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || "Erro ao enviar relatório.");
-      }
-      alert(result.message);
-    } catch (err) {
-      console.error("Erro ao enviar relatório:", err);
-      alert(`Erro: ${err.message}`);
     }
   });
 
