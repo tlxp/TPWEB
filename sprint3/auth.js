@@ -1,6 +1,5 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const router = express.Router();
@@ -34,11 +33,6 @@ module.exports = function (
   gridFSBucket,
   upload
 ) {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-  });
-
   router.get("/profile", authorize(["Cliente"]), async (req, res) => {
     try {
       const user = await User.findById(req.user.id).select(
@@ -326,31 +320,6 @@ module.exports = function (
       }
     }
   );
-
-  router.post("/send-report", authorize(["Cliente"]), async (req, res) => {
-    const credits = await Credit.find({ clientId: req.user.id })
-      .sort({ date: -1 })
-      .limit(1);
-    if (!credits.length) {
-      return res.status(404).json({ message: "Nenhum crédito registrado." });
-    }
-    const user = await User.findById(req.user.id);
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: user.email,
-      subject: "Relatório Mensal de Créditos de Energia",
-      text: `Olá, sua última leitura registrou ${
-        credits[0].kWh
-      } kWh em ${credits[0].date.toLocaleDateString()}.`,
-    };
-    transporter.sendMail(mailOptions, (err) => {
-      if (err) {
-        console.error("Erro ao enviar e-mail:", err);
-        return res.status(500).json({ message: "Erro ao enviar e-mail." });
-      }
-      res.json({ message: "Relatório enviado com sucesso." });
-    });
-  });
 
   router.get(
     "/download-certificate",
