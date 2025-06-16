@@ -3,15 +3,20 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const authRoutes = require("./auth"); // Assumindo que este ficheiro existe
+const authRoutes = require("./auth");
 const { GridFSBucket } = require("mongodb");
 const multer = require("multer");
-const fetch = require("node-fetch"); // Precisamos de node-fetch
+const fetch = require("node-fetch");
+const cron = require("node-cron");
+const nodemailer = require("nodemailer");
 
 const app = express();
-const PORT = process.env.PORT || 3000; // A tua porta principal (ex: 3000)
+const PORT = process.env.PORT || 3000;
 const DB_URI = process.env.DB_URI || "mongodb://localhost:27017/loginDB";
-const ENERGY_SIM_API_URL = "http://localhost:4000/api"; // URL do teu servidor de simulação
+const ENERGY_SIM_API_URL = "http://localhost:4000/api";
+
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
 
 // Configure multer to store files in memory
 const upload = multer({
@@ -67,7 +72,6 @@ mongoose
       bucketName: "certificates",
     });
 
-    // Schemas (certifica-te que os campos prod, prodMes, creditos existem)
     const userSchema = new mongoose.Schema(
       {
         username: { type: String, required: true, unique: true, trim: true },
@@ -180,8 +184,6 @@ mongoose
     );
     console.log("Routes registered.");
 
-    // --- Endpoints para Monitorização e Créditos com Validação e Persistência ---
-
     // Endpoint para obter a produção de energia em tempo real
     app.get("/api/production/realtime/:username", async (req, res) => {
       const { username } = req.params;
@@ -282,18 +284,18 @@ mongoose
         const simData = await simResponse.json();
         console.log(`[MONTHLY] Dados de simulação recebidos:`, simData);
 
-        user.prodMes = simData.monthlyEnergy; // simData.monthlyEnergy é o valor de Junho da simulação
+        user.prodMes = simData.monthlyEnergy; // valorMes
         await user.save(); // Guarda a alteração no DB
         console.log(
           `[MONTHLY] 'prodMes' para '${username}' ATUALIZADO para ${user.prodMes} e salvo no DB.`
         );
 
-        // Devolve os dados ao frontend (histórico é do sim-server, monthlyEnergy é o de Junho persistido)
+        // Devolve os dados ao frontend
         res.json({
           username: user.username,
-          monthlyEnergy: user.prodMes, // Usa o valor persistente de Junho
+          monthlyEnergy: user.prodMes,
           unit: "kWh",
-          history: simData.history, // O histórico detalhado vem da simulação
+          history: simData.history,
         });
       } catch (error) {
         console.error(
@@ -303,6 +305,85 @@ mongoose
         res.status(500).json({ message: "Erro interno do servidor." });
       }
     });
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    const sendMonthlyReportEmails = async () => {
+      console.log("Dia 1, a mandar mails");
+
+      if (!EMAIL_USER || !EMAIL_PASS) {
+        console.error(
+          "Erro: As variáveis de ambiente EMAIL_USER e EMAIL_PASS não estão definidas."
+        );
+        return;
+      }
+
+      try {
+        const clients = await User.find({ role: "Cliente" });
+        console.log(
+          `Encontrados ${clients.length} clientes para enviar relatórios agendados.`
+        );
+
+        for (const client of clients) {
+          const clientEmail = client.email;
+          const clientName = client.username;
+          const monthlyProduction = client.prodMes;
+
+          if (!clientEmail) {
+            console.warn(
+              `Cliente ${clientName} (ID: ${client._id}) não tem email. A ignorar envio agendado.`
+            );
+            continue;
+          }
+
+          const mailDetails = {
+            from: EMAIL_USER,
+            to: clientEmail,
+            subject: "Relatório Mensal de Produção de Energia Solar",
+            text: `Durante o mês produziu um total de ${monthlyProduction} kWh de energia. Parabéns! *ou não*, Com os melhores cumprimento, Diogo, José e Tiago`,
+          };
+
+          try {
+            await transporter.sendMail(mailDetails);
+            console.log(
+              `Relatório mensal agendado enviado para ${clientName} (${clientEmail})`
+            );
+          } catch (emailError) {
+            console.error(
+              `Erro ao enviar email agendado para ${clientName} (${clientEmail}):`,
+              emailError
+            );
+          }
+        }
+      } catch (error) {
+        console.error(
+          "Erro no processo de envio de relatórios agendado:",
+          error
+        );
+      }
+    };
+
+    //manda ás 00:01 de todos os meses
+    cron.schedule(
+      "1 0 1 * *",
+      () => {
+        console.log("Executando tarefa agendada: envio de relatórios mensais.");
+        sendMonthlyReportEmails();
+      },
+      {
+        scheduled: true,
+        timezone: "Europe/Lisbon", //só pra garantir
+      }
+    );
 
     // Endpoint para Contabilização Mensal de Créditos
     app.get("/api/credits/monthly-tally/:username", async (req, res) => {
@@ -325,19 +406,12 @@ mongoose
         }
         console.log(`[CREDITS] Utilizador '${username}' (Cliente) encontrado.`);
 
-        // A "produção registrada este mês" para créditos é o valor de 'prodMes' do utilizador,
-        // que deve ser a energia de Junho já guardada na BD.
         const producedThisMonth = user.prodMes;
 
-        // Não precisamos de chamar a API de simulação aqui para `producedThisMonth`
-        // porque já o temos persistido em `user.prodMes`.
-
-        // Simula consumo (ainda aleatório, não persistente nesta fase)
         const consumedThisMonth = (Math.random() * (1500 - 50) + 50).toFixed(1);
 
-        // Os créditos gerados este mês são o valor inteiro da energia produzida neste mês ('prodMes')
-        let energyForCredits = 0; // Inicializa os créditos gerados este mês como 0
-        // Lógica para calcular os créditos gerados este mês
+        let energyForCredits = 0;
+
         if (producedThisMonth > consumedThisMonth) {
           energyForCredits = Math.floor(producedThisMonth - consumedThisMonth);
           console.log(
